@@ -7,11 +7,13 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgra
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "contracts/interface/ICarbonUnits.sol";
 
 contract ZeroCarbonCredit is ERC721URIStorageUpgradeable, EIP712Upgradeable, Ownable {
 
 address public _admin;
 address public _exchange;
+address public carbonUnitsToken;
 uint256 private totalSupply;
 uint256 private _totalCarbonUnits;
 
@@ -37,23 +39,19 @@ function initialize(string memory _name, string memory _symbol, address _admin, 
     _exchange = _exchange;
     }
 
-//function MintNft(address _to, uint _tokenId, string memory _tokenURI, address _royaltyKeeper,uint256 _maxFractions, uint256 _fractions, uint96 _royaltyFees) external returns(address){
-//      require(msg.sender== marketPlace, "Call only allowed from marketplace");
-//      if(STOForTokenId[_tokenId]==address(0)){
-//      address STO = ISecurityTokenFactory(securityTokenFactory).deployTokenForNFT("NoCap NFT STO", "NOCAPSTO", 0, _tokenId,_maxFractions);
-//      _safeMint(STO, _tokenId);
-//      _setTokenURI(_tokenId, _tokenURI);
-//      totalSupply++;
-//      if(_royaltyKeeper != address(0)){
-//      _setTokenRoyalty(_tokenId, _royaltyKeeper, _royaltyFees);}
-//      STOForTokenId[_tokenId] = STO;
-//      IFractionToken(STO).mint(_to, _fractions);
-//      }
-//      else {
-//         IFractionToken(STOForTokenId[_tokenId]).mint(_to, _fractions);
-//      }
-//      return STOForTokenId[_tokenId];
-// }
+function MintNft(address _to, uint _tokenId, string memory _tokenURI,uint256 _maxCarbonUnits, uint256 _noCarbonUnits, uint256 _expirationPeriod) external{
+    require(msg.sender== _exchange, "Call only allowed from Carbon Exchange");
+    if(_exists(_tokenId)){
+    ICarbonUnits(carbonUnitsToken).mint(_to, _noCarbonUnits, _expirationPeriod);
+    }
+    else {
+    _safeMint(carbonUnitsToken, _tokenId);
+    _setTokenURI(_tokenId, _tokenURI);
+    totalSupply++;
+    ICarbonUnits(carbonUnitsToken).mint(_to, _noCarbonUnits, _expirationPeriod);
+        
+     }
+}
 
 function updateTokenURI(uint tokenId, string memory _tokenURI) external onlyAdmin{
     _setTokenURI(tokenId, _tokenURI);

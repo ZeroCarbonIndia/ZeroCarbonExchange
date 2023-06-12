@@ -11,7 +11,7 @@ import "./library/Credit.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "hardhat/console.sol";
 
-contract NoCapMarketplace is Ownable, Initializable, EIP712Upgradeable, ReentrancyGuardUpgradeable {
+contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, ReentrancyGuardUpgradeable {
 
     
     address public admin;
@@ -68,7 +68,7 @@ contract NoCapMarketplace is Ownable, Initializable, EIP712Upgradeable, Reentran
     function initialize(address _admin, uint96 _platformFeePercent, address _tether) external initializer {
         require(_admin!=address(0),"Zero address.");
         require(_tether!=address(0),"Zero address");
-        __EIP712_init_unchained("Zero_Carbon_World", "1");
+        __EIP712_init_unchained("Zero_Carbon", "1");
         admin = _admin;
         platformFeePercent = _platformFeePercent;
         tether = _tether;
@@ -76,84 +76,84 @@ contract NoCapMarketplace is Ownable, Initializable, EIP712Upgradeable, Reentran
     }
 
     function hashParcel(Credit.CarbonCreditParcel memory parcel) internal view returns(bytes32) {
-        return _hashTypedDataV4(keccak256(abi.encode(keccak256("CarbonCreditParcel(address seller,uint256 tokenId,uint256 maxCarbonUnits,uint256 pricePerCarbonUnit,string tokenURI)"),
+        return _hashTypedDataV4(keccak256(abi.encode(keccak256("CarbonCreditParcel(address seller,uint256 tokenId,uint256 maxCarbonUnits,uint256 pricePerCarbonUnit,uint256 timePeriod,string tokenURI)"),
         parcel.seller,
         parcel.tokenId,
         parcel.maxCarbonUnits,
         parcel.pricePerCarbonUnit,
+        parcel.timePeriod,
         keccak256(bytes(parcel.tokenURI))
         )));
     }
 
-    function verifyVoucher(Credit.CarbonCreditParcel memory parcel) public view returns(address) {
+    function verifyParcel(Credit.CarbonCreditParcel memory parcel) public view returns(address) {
         bytes32 digest = hashParcel(parcel);
         return ECDSAUpgradeable.recover(digest, parcel.signature);
     }
 
-    function voucherOwner(Credit.CarbonCreditParcel memory parcel) public pure returns(address){
+    function parcelOwner(Credit.CarbonCreditParcel memory parcel) public pure returns(address){
         return parcel.seller;
     }
 
-    // function buyNFT(Voucher.NFTVoucher memory voucher,uint256 _fractions,
-    //     bool isPrimary,
-    //     address _currency) external payable nonReentrant returns(address){
+    function buyNFT(Credit.CarbonCreditParcel memory parcel,uint256 _noCarbonUnits,
+        bool isPrimary,
+        address _currency) external payable nonReentrant returns(address){
         
-    //     address sellerAddress = verifyVoucher(voucher);
+        address sellerAddress = verifyParcel(parcel);
 
-    //     require(sellerAddress==voucher.seller,"Invalid seller.");
-    //     if(isPrimary) {
-    //        (,uint amount,) = calculateTotalAmount(voucher,_fractions,isPrimary);
-    //        require(sellerAddress==INoCapTemplate(voucher.NFTAddress).collectionAdmin(),"Only admin is allowed to list primary sale.");
+        require(sellerAddress==parcel.seller,"Invalid seller.");
+        if(isPrimary) {
+           uint amount = calculateTotalAmount(parcel,_noCarbonUnits);
 
-    //         if(_currency==address(1)){
-    //             require(msg.value >= amount,"Invalid amount.");
-    //             // (bool sentAmount,) = payable(voucher.seller).call{value:(voucher.pricePerFraction)*_fractions}("");
-    //             // require(sentAmount,"Amount transfer failed.");
-    //             saleTransaction(voucher.NFTAddress, voucher.seller, voucher.tokenId,_fractions, amount, (voucher.pricePerFraction)*_fractions, _currency);
-    //             if(msg.value > amount){
-    //             (bool sent,) = payable(msg.sender).call{value: msg.value - amount}("");}
+            if(_currency==address(1)){
+                require(msg.value >= amount,"Invalid amount.");
+                // (bool sentAmount,) = payable(parcel.seller).call{value:(parcel.pricePerFraction)*_fractions}("");
+                // require(sentAmount,"Amount transfer failed.");
+                // saleTransaction(parcel.NFTAddress, parcel.seller, parcel.tokenId,_fractions, amount, (parcel.pricePerFraction)*_fractions, _currency);
+                if(msg.value > amount){
+                (bool sent,) = payable(msg.sender).call{value: msg.value - amount}("");}
 
-    //         } else{
-    //             require(allowedCurrencies[_currency],"Currency not allowed.");
-    //             IERC20(_currency).transferFrom(msg.sender, address(this), amount);
-    //             saleTransaction(voucher.NFTAddress,voucher.seller,voucher.tokenId,_fractions,amount,(voucher.pricePerFraction)*_fractions, _currency);
-    //             // IERC20(_currency).transferFrom(msg.sender, voucher.seller, (voucher.pricePerFraction)*_fractions);
+            } else{
+                require(allowedCurrencies[_currency],"Currency not allowed.");
+                IERC20(_currency).transferFrom(msg.sender, address(this), amount);
+                // saleTransaction(parcel.NFTAddress,parcel.seller,parcel.tokenId,_fractions,amount,(parcel.pricePerFraction)*_fractions, _currency);
+                // IERC20(_currency).transferFrom(msg.sender, parcel.seller, (parcel.pricePerFraction)*_fractions);
 
-    //         }
-    //         address STO = INoCapTemplate(voucher.NFTAddress).MintNft(msg.sender, voucher.tokenId, voucher.tokenURI,voucher.seller,voucher.maxFractions, _fractions, voucher.royaltyFees);
-    //         platformCollection[_currency]+= (platformFeePercent*voucher.pricePerFraction*_fractions)/10000;
-    //         if(fractionsNFT[voucher.NFTAddress][voucher.tokenId].totalFractions==0){ 
-    //         fractionsNFT[voucher.NFTAddress][voucher.tokenId].totalFractions= voucher.maxFractions;
-    //         fractionsNFT[voucher.NFTAddress][voucher.tokenId].fractionsLeft = voucher.maxFractions - _fractions;}
+            }
+    //         address STO = INoCapTemplate(parcel.NFTAddress).MintNft(msg.sender, parcel.tokenId, parcel.tokenURI,parcel.seller,parcel.maxFractions, _fractions, parcel.royaltyFees);
+    //         platformCollection[_currency]+= (platformFeePercent*parcel.pricePerFraction*_fractions)/10000;
+    //         if(fractionsNFT[parcel.NFTAddress][parcel.tokenId].totalFractions==0){ 
+    //         fractionsNFT[parcel.NFTAddress][parcel.tokenId].totalFractions= parcel.maxFractions;
+    //         fractionsNFT[parcel.NFTAddress][parcel.tokenId].fractionsLeft = parcel.maxFractions - _fractions;}
     //         else{
-    //         fractionsNFT[voucher.NFTAddress][voucher.tokenId].fractionsLeft -= _fractions;
+    //         fractionsNFT[parcel.NFTAddress][parcel.tokenId].fractionsLeft -= _fractions;
     //         }
     //         return STO;
     //                     //emit event for nft creation
     //     }
     //     else{
-    //         require(INoCapTemplate(voucher.NFTAddress).checkExist(voucher.tokenId),"NFT does not exist.");
-    //         require(fractionsNFT[voucher.NFTAddress][voucher.tokenId].fractionsLeft==0,"Sale not allowed until all fractions are issued.");
-    //         (address receiver,uint amount,uint royaltyAmount) = calculateTotalAmount(voucher,_fractions,isPrimary);
+    //         require(INoCapTemplate(parcel.NFTAddress).checkExist(parcel.tokenId),"NFT does not exist.");
+    //         require(fractionsNFT[parcel.NFTAddress][parcel.tokenId].fractionsLeft==0,"Sale not allowed until all fractions are issued.");
+    //         (address receiver,uint amount,uint royaltyAmount) = calculateTotalAmount(parcel,_fractions,isPrimary);
     //         if(_currency==address(1)) {
     //             require(msg.value >= amount,"Invalid amount.");
-    //             (bool sentToSeller,) = payable(voucher.seller).call{value: voucher.pricePerFraction}("");
-    //             platformCollection[_currency] += (platformFeePercent*voucher.pricePerFraction*_fractions)/10000;
+    //             (bool sentToSeller,) = payable(parcel.seller).call{value: parcel.pricePerFraction}("");
+    //             platformCollection[_currency] += (platformFeePercent*parcel.pricePerFraction*_fractions)/10000;
     //             (bool royaltySent,) = payable(receiver).call{value: royaltyAmount}("");
     //             require(sentToSeller && royaltySent,"Ether transfer failed.");
     //             if(msg.value > amount){
     //             (bool sent,) = payable(msg.sender).call{value: msg.value - amount}("");}
     //         } else {
     //             require(allowedCurrencies[_currency],"Invalid currency");
-    //             IERC20(_currency).transferFrom(msg.sender, voucher.seller, voucher.pricePerFraction);
-    //             IERC20(_currency).transferFrom(msg.sender, address(this), (platformFeePercent*voucher.pricePerFraction*_fractions)/10000);
-    //             platformCollection[_currency] += (platformFeePercent*voucher.pricePerFraction*_fractions)/10000;
+    //             IERC20(_currency).transferFrom(msg.sender, parcel.seller, parcel.pricePerFraction);
+    //             IERC20(_currency).transferFrom(msg.sender, address(this), (platformFeePercent*parcel.pricePerFraction*_fractions)/10000);
+    //             platformCollection[_currency] += (platformFeePercent*parcel.pricePerFraction*_fractions)/10000;
     //             IERC20(_currency).transferFrom(msg.sender, receiver, royaltyAmount);
     //         }
-    //             IERC20(INoCapTemplate(voucher.NFTAddress).getSTOForTokenId(voucher.tokenId)).transferFrom(voucher.seller,msg.sender,_fractions);
+    //             IERC20(INoCapTemplate(parcel.NFTAddress).getSTOForTokenId(parcel.tokenId)).transferFrom(parcel.seller,msg.sender,_fractions);
                 
     //         }
-    // }
+    }
 
     function setPlatformFeePercent(uint96 _newPlatformFee) external onlyAdmin{
         platformFeePercent = _newPlatformFee;
@@ -163,22 +163,12 @@ contract NoCapMarketplace is Ownable, Initializable, EIP712Upgradeable, Reentran
         admin  = _newAdmin;
     }
 
-    // function calculateTotalAmount(Voucher.NFTVoucher memory voucher,uint256 _fractions, bool _isPrimary) public view returns(address, uint256, uint256){
-    //     uint platformAmount = (platformFeePercent*voucher.pricePerFraction*_fractions)/10000;
-    //     uint totalAmount;
-    //     address receiver;
-    //     uint royaltyAmount;
-    //     if(_isPrimary){
-    //     totalAmount = platformAmount+(voucher.pricePerFraction)*_fractions;
-    //     }
-    //     else{
-    //     (address receivers, uint royaltyAmounts) = INoCapTemplate(voucher.NFTAddress).royaltyInfo(voucher.tokenId, voucher.pricePerFraction);
-    //     totalAmount = platformAmount+((voucher.pricePerFraction)*_fractions)+royaltyAmount;
-    //     receiver = receivers;
-    //     royaltyAmount = royaltyAmounts;
-    //     }
-    //     return (receiver,totalAmount,royaltyAmount);
-    // }
+    function calculateTotalAmount(Credit.CarbonCreditParcel memory parcel,uint256 _noCarbonUnits) public view returns(uint256){
+        uint platformAmount = (platformFeePercent*parcel.pricePerCarbonUnit*_noCarbonUnits)/10000;
+        uint totalAmount;
+        totalAmount = platformAmount+(parcel.pricePerCarbonUnit)*_noCarbonUnits;
+        return (totalAmount);
+    }
 
     // function saleTransaction(address _collection, address _seller, uint _tokenId, uint _fractions, uint _totalAmount, uint _sellerAmount, address _currencyAddress) internal {
     //     SaleReceipt storage saleReceipt = SaleReceiptForBuyer[msg.sender];
@@ -197,10 +187,6 @@ contract NoCapMarketplace is Ownable, Initializable, EIP712Upgradeable, Reentran
 
     function viewSaleReceipt(address _address, uint _transactionNo) external view returns(PerSale memory) {
         return SaleReceiptForBuyer[_address].receiptPerTransaction[_transactionNo];
-    }
-
-    function viewSellerAmounts(address _seller, address _collectionAddress, uint _tokenId) external view returns(uint, address) {
-        return (SellerAmounts[_seller][_collectionAddress][_tokenId].amount,SellerAmounts[_seller][_collectionAddress][_tokenId].currencyAddress);
     }
 
     function withdrawPlatformAmount(address _currency) external onlyAdmin nonReentrant{
