@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 
-contract FractionToken is Context, IERC20, IERC20Metadata, Initializable {
+contract ZeroCarbonUnitToken is Context, IERC20, IERC20Metadata, Initializable {
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -21,7 +21,6 @@ contract FractionToken is Context, IERC20, IERC20Metadata, Initializable {
     uint8 private _decimals;
     address public identityRegistry;
     address public zeroCarbonNFT;
-    uint256 public tokenId;
 
     address public admin;
 
@@ -42,14 +41,12 @@ contract FractionToken is Context, IERC20, IERC20Metadata, Initializable {
         _;
     }
     
-    function init(string memory name_, string memory symbol_, uint8 decimals_, address _collectionAddress, uint256 _tokenId, address _identityRegistry, uint256 maxSupply_, address _admin) external initializer{
+    function init(string memory name_, string memory symbol_, uint8 decimals_, address _collectionAddress, address _admin) external initializer{
         _name = name_;
         _symbol = symbol_;
         _decimals = decimals_;
-        identityRegistry = _identityRegistry;
+        // identityRegistry = _identityRegistry;
         zeroCarbonNFT = _collectionAddress;
-        tokenId = _tokenId;
-        _maxSupply = maxSupply_;
         admin = _admin;
     }
 

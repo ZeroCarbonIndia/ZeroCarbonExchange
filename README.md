@@ -35,7 +35,7 @@ License
 Zero Carbon is licensed under the MIT License. Feel free to use, modify, and distribute the code as permitted by the license.
 Contact
 
-If you have any questions, suggestions, or feedback, please reach out to our team at info@zerocarbonindia.com.
+If you have any questions, suggestions, or feedback, please reach out to our team at contact@zerocarbon.com.
 
 Let's join forces to combat climate change and build a greener future together!
 User

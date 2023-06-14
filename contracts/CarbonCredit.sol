@@ -11,8 +11,8 @@ import "contracts/interface/ICarbonUnits.sol";
 
 contract ZeroCarbonCredit is ERC721URIStorageUpgradeable, EIP712Upgradeable, Ownable {
 
-address public _admin;
-address public _exchange;
+address public admin;
+address public exchange;
 address public carbonUnitsToken;
 uint256 private totalSupply;
 uint256 private _totalCarbonUnits;
@@ -26,21 +26,21 @@ struct CarbonUnitsHistory {
 
 
 modifier onlyAdmin{
-    require(msg.sender==_admin,"You are not the admin.");
+    require(msg.sender==admin,"You are not the admin.");
     _;
 }
 
-function initialize(string memory _name, string memory _symbol, address _admin, uint96 _royaltyAmount,address _exchange, address _securityTokenFactory) external initializer {
+function initialize(string memory _name, string memory _symbol, address _admin,address _exchange) external initializer {
     require(_admin != address(0), "ZAA"); //Zero Address for Admin
     require(_exchange != address(0), "ZAM");//Zero Address for Marketplace
     __ERC721_init_unchained(_name, _symbol);
     __EIP712_init_unchained(_name, "1");
-    _admin = _admin;
-    _exchange = _exchange;
+    admin = _admin;
+    exchange = _exchange;
     }
 
 function MintNft(address _to, uint _tokenId, string memory _tokenURI,uint256 _maxCarbonUnits, uint256 _noCarbonUnits, uint256 _expirationPeriod) external{
-    require(msg.sender== _exchange, "Call only allowed from Carbon Exchange");
+    require(msg.sender== exchange, "Call only allowed from Carbon Exchange");
     if(_exists(_tokenId)){
     ICarbonUnits(carbonUnitsToken).mint(_to, _noCarbonUnits, _expirationPeriod);
     }
@@ -92,8 +92,8 @@ function supportsInterface(bytes4 interfaceId)
     return _exists(_tokenId);
  }   
 
-function admin() external view returns(address){
-    return _admin;
+function getAdmin() external view returns(address){
+    return admin;
 }    
 
 }

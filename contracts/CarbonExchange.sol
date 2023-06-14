@@ -10,15 +10,21 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./library/Credit.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "hardhat/console.sol";
+import "contracts/interface/ICarbonCredit.sol";
+import "contracts/interface/ICarbonUnits.sol";
 
 contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, ReentrancyGuardUpgradeable {
 
     
     address public admin;
 
+    address public carbonCreditNFT;
+
     uint96 public platformFeePercent; // in BP 10000.
 
     address public tether;
+
+    bool public stakeEnabled;
 
     struct CarbonUnitsLeftInNFT{
         uint256 totalCarbonUnits;
@@ -26,14 +32,12 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
     }
 
     struct PerSale{
-    address collectionAddress;
     address seller;
     uint tokenId;
-    uint fractions;
+    uint noCarbonUnits;
+    address currency;
     uint amount;
     uint sellerShare;
-    address currency;
-    bool refundIssued;
     }
 
     struct SaleReceipt {
@@ -54,7 +58,7 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
 
     mapping(address=>SaleReceipt) public SaleReceiptForBuyer;
 
-    mapping(address=>mapping(address=>mapping(uint=>SellerReceipt))) public SellerAmounts;
+    mapping(address=>mapping(uint=>SellerReceipt)) public SellerAmounts;
 
     mapping(address=>mapping(uint=>bool)) public refundEnabled;
 
@@ -65,13 +69,14 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
         _;
     }
 
-    function initialize(address _admin, uint96 _platformFeePercent, address _tether) external initializer {
+    function initialize(address _admin, uint96 _platformFeePercent, address _tether, address _carbonCreditNFT) external initializer {
         require(_admin!=address(0),"Zero address.");
         require(_tether!=address(0),"Zero address");
         __EIP712_init_unchained("Zero_Carbon", "1");
         admin = _admin;
         platformFeePercent = _platformFeePercent;
         tether = _tether;
+        carbonCreditNFT = _carbonCreditNFT;
         allowedCurrencies[tether] = true;
     }
 
@@ -109,7 +114,7 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
                 require(msg.value >= amount,"Invalid amount.");
                 // (bool sentAmount,) = payable(parcel.seller).call{value:(parcel.pricePerFraction)*_fractions}("");
                 // require(sentAmount,"Amount transfer failed.");
-                // saleTransaction(parcel.NFTAddress, parcel.seller, parcel.tokenId,_fractions, amount, (parcel.pricePerFraction)*_fractions, _currency);
+                saleTransaction(stakeEnabled ,parcel.seller, parcel.tokenId,_noCarbonUnits, amount, (parcel.pricePerCarbonUnit)*_noCarbonUnits, _currency);
                 if(msg.value > amount){
                 (bool sent,) = payable(msg.sender).call{value: msg.value - amount}("");}
 
@@ -120,20 +125,12 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
                 // IERC20(_currency).transferFrom(msg.sender, parcel.seller, (parcel.pricePerFraction)*_fractions);
 
             }
-    //         address STO = INoCapTemplate(parcel.NFTAddress).MintNft(msg.sender, parcel.tokenId, parcel.tokenURI,parcel.seller,parcel.maxFractions, _fractions, parcel.royaltyFees);
-    //         platformCollection[_currency]+= (platformFeePercent*parcel.pricePerFraction*_fractions)/10000;
-    //         if(fractionsNFT[parcel.NFTAddress][parcel.tokenId].totalFractions==0){ 
-    //         fractionsNFT[parcel.NFTAddress][parcel.tokenId].totalFractions= parcel.maxFractions;
-    //         fractionsNFT[parcel.NFTAddress][parcel.tokenId].fractionsLeft = parcel.maxFractions - _fractions;}
-    //         else{
-    //         fractionsNFT[parcel.NFTAddress][parcel.tokenId].fractionsLeft -= _fractions;
-    //         }
-    //         return STO;
-    //                     //emit event for nft creation
+            ICarbonCredit(carbonCreditNFT).MintNft(msg.sender,parcel.tokenId,parcel.tokenURI,parcel.maxCarbonUnits,_noCarbonUnits,parcel.timePeriod);
+            platformCollection[_currency]+= (platformFeePercent*parcel.pricePerCarbonUnit*_noCarbonUnits)/10000;
+    //         
     //     }
     //     else{
     //         require(INoCapTemplate(parcel.NFTAddress).checkExist(parcel.tokenId),"NFT does not exist.");
-    //         require(fractionsNFT[parcel.NFTAddress][parcel.tokenId].fractionsLeft==0,"Sale not allowed until all fractions are issued.");
     //         (address receiver,uint amount,uint royaltyAmount) = calculateTotalAmount(parcel,_fractions,isPrimary);
     //         if(_currency==address(1)) {
     //             require(msg.value >= amount,"Invalid amount.");
@@ -152,7 +149,7 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
     //         }
     //             IERC20(INoCapTemplate(parcel.NFTAddress).getSTOForTokenId(parcel.tokenId)).transferFrom(parcel.seller,msg.sender,_fractions);
                 
-    //         }
+            }
     }
 
     function setPlatformFeePercent(uint96 _newPlatformFee) external onlyAdmin{
@@ -170,20 +167,25 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
         return (totalAmount);
     }
 
-    // function saleTransaction(address _collection, address _seller, uint _tokenId, uint _fractions, uint _totalAmount, uint _sellerAmount, address _currencyAddress) internal {
-    //     SaleReceipt storage saleReceipt = SaleReceiptForBuyer[msg.sender];
-    //     SellerAmounts[_seller][_collection][_tokenId].currencyAddress = _currencyAddress;
-    //     SellerAmounts[_seller][_collection][_tokenId].amount += _sellerAmount;
-    //     saleReceipt.totalTransactions++;
-    //     PerSale storage perSale = saleReceipt.receiptPerTransaction[saleReceipt.totalTransactions];
-    //     perSale.collectionAddress = _collection;
-    //     perSale.amount = _totalAmount;
-    //     perSale.seller = _seller;
-    //     perSale.tokenId = _tokenId;
-    //     perSale.fractions = _fractions;
-    //     perSale.currency = _currencyAddress;
-    //     perSale.sellerShare = _sellerAmount;
-    // }
+    function enableStake(bool _if) external onlyAdmin {
+        stakeEnabled = _if;
+    }
+
+    function saleTransaction(bool _stakeEnabled, address _seller, uint _tokenId, uint _noCarbonUnits, uint _totalAmount, uint _sellerAmount, address _currencyAddress) internal {
+        SaleReceipt storage saleReceipt = SaleReceiptForBuyer[msg.sender];
+        if(stakeEnabled){
+        SellerAmounts[_seller][_tokenId].currencyAddress = _currencyAddress;
+        SellerAmounts[_seller][_tokenId].amount += _sellerAmount;
+        }
+        saleReceipt.totalTransactions++;
+        PerSale storage perSale = saleReceipt.receiptPerTransaction[saleReceipt.totalTransactions];
+        perSale.seller = _seller;
+        perSale.tokenId = _tokenId;
+        perSale.noCarbonUnits = _noCarbonUnits;
+        perSale.currency = _currencyAddress;
+        perSale.amount = _totalAmount;
+        perSale.sellerShare = _sellerAmount;
+    }
 
     function viewSaleReceipt(address _address, uint _transactionNo) external view returns(PerSale memory) {
         return SaleReceiptForBuyer[_address].receiptPerTransaction[_transactionNo];
