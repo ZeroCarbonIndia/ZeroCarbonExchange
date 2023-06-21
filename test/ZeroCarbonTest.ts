@@ -33,7 +33,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
         await token.connect(owner).init("Zero Carbon Units","ZCU",0,nft.address,owner.address);
     })
 
-    it("Testing Parcel Signing and listing", async()=>{
+    it("Testing parcel signing and listing.", async()=>{
         const seller = await new CarbonCreditParcel({
             _contract: exchange,
             _signer: owner
@@ -56,12 +56,12 @@ describe("Zero Carbon Platform Test Cases",()=>{
 
     })
 
-    it("Setting platform Fee", async() =>{
+    it("Setting platform fee.", async() =>{
         await exchange.connect(owner).setPlatformFeePercent(300);
         console.log("New palatform fee: ", await exchange.platformFeePercent());
     })
 
-    it("Calculate total amount to be paid", async()=>{
+    it("Calculate total amount to be paid.", async()=>{
         const seller = await new CarbonCreditParcel({
             _contract: exchange,
             _signer: owner
@@ -75,5 +75,32 @@ describe("Zero Carbon Platform Test Cases",()=>{
             "Carbon credits"
         )
         console.log("Total amount callculated to be: ",await exchange.calculateTotalAmount(parcel,10));
+    })
+
+    it("Setting new admin.", async()=>{
+        console.log("Current admin: ", await exchange.admin());
+        await exchange.connect(owner).setAdmin(signer[1].address);
+        console.log("New admin: ",await exchange.admin());
+    })
+
+    it("Enable seller stake.", async()=>{
+        console.log("Current state of seller stake: ", await exchange.stakeEnabled());
+        await exchange.connect(owner).enableStake(true);
+        console.log("New state of seller stake: ", await exchange.stakeEnabled());
+    })
+
+    it("Buy carbon credits for the first time.", async()=>{
+        const seller = await new CarbonCreditParcel({
+            _contract: exchange,
+            _signer : owner
+        })
+        const parcel = await seller.createParcel(
+            owner.address,
+            1,
+            1000,
+            100,
+            1222222,
+            "Sample"
+        )
     })
 })

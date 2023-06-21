@@ -92,6 +92,10 @@ function supportsInterface(bytes4 interfaceId)
     return _exists(_tokenId);
  }   
 
+ function addressCarbonUnits() external view returns(address) {
+    return carbonUnitsToken;
+ }
+
 function getAdmin() external view returns(address){
     return admin;
 }    

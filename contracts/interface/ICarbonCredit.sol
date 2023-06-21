@@ -11,4 +11,10 @@ interface ICarbonCredit {
     uint256 _noCarbonUnits, 
     uint256 _expirationPeriod) external;
 
+    function checkExist(uint _tokenId) external view returns(bool);
+
+    function addressCarbonUnits() external view returns(address);
+
+
+
 }

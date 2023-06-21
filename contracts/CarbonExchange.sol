@@ -112,43 +112,37 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
 
             if(_currency==address(1)){
                 require(msg.value >= amount,"Invalid amount.");
-                // (bool sentAmount,) = payable(parcel.seller).call{value:(parcel.pricePerFraction)*_fractions}("");
-                // require(sentAmount,"Amount transfer failed.");
-                saleTransaction(stakeEnabled ,parcel.seller, parcel.tokenId,_noCarbonUnits, amount, (parcel.pricePerCarbonUnit)*_noCarbonUnits, _currency);
+                saleTransaction(parcel.seller, parcel.tokenId, _noCarbonUnits, amount, (parcel.pricePerCarbonUnit)*_noCarbonUnits, _currency);
                 if(msg.value > amount){
                 (bool sent,) = payable(msg.sender).call{value: msg.value - amount}("");}
 
             } else{
                 require(allowedCurrencies[_currency],"Currency not allowed.");
-                IERC20(_currency).transferFrom(msg.sender, address(this), amount);
-                // saleTransaction(parcel.NFTAddress,parcel.seller,parcel.tokenId,_fractions,amount,(parcel.pricePerFraction)*_fractions, _currency);
-                // IERC20(_currency).transferFrom(msg.sender, parcel.seller, (parcel.pricePerFraction)*_fractions);
-
+                saleTransaction(parcel.seller, parcel.tokenId, _noCarbonUnits, amount, (parcel.pricePerCarbonUnit)*_noCarbonUnits, _currency);
             }
+
             ICarbonCredit(carbonCreditNFT).MintNft(msg.sender,parcel.tokenId,parcel.tokenURI,parcel.maxCarbonUnits,_noCarbonUnits,parcel.timePeriod);
             platformCollection[_currency]+= (platformFeePercent*parcel.pricePerCarbonUnit*_noCarbonUnits)/10000;
-    //         
-    //     }
-    //     else{
-    //         require(INoCapTemplate(parcel.NFTAddress).checkExist(parcel.tokenId),"NFT does not exist.");
-    //         (address receiver,uint amount,uint royaltyAmount) = calculateTotalAmount(parcel,_fractions,isPrimary);
-    //         if(_currency==address(1)) {
-    //             require(msg.value >= amount,"Invalid amount.");
-    //             (bool sentToSeller,) = payable(parcel.seller).call{value: parcel.pricePerFraction}("");
-    //             platformCollection[_currency] += (platformFeePercent*parcel.pricePerFraction*_fractions)/10000;
-    //             (bool royaltySent,) = payable(receiver).call{value: royaltyAmount}("");
-    //             require(sentToSeller && royaltySent,"Ether transfer failed.");
-    //             if(msg.value > amount){
-    //             (bool sent,) = payable(msg.sender).call{value: msg.value - amount}("");}
-    //         } else {
-    //             require(allowedCurrencies[_currency],"Invalid currency");
-    //             IERC20(_currency).transferFrom(msg.sender, parcel.seller, parcel.pricePerFraction);
-    //             IERC20(_currency).transferFrom(msg.sender, address(this), (platformFeePercent*parcel.pricePerFraction*_fractions)/10000);
-    //             platformCollection[_currency] += (platformFeePercent*parcel.pricePerFraction*_fractions)/10000;
-    //             IERC20(_currency).transferFrom(msg.sender, receiver, royaltyAmount);
-    //         }
-    //             IERC20(INoCapTemplate(parcel.NFTAddress).getSTOForTokenId(parcel.tokenId)).transferFrom(parcel.seller,msg.sender,_fractions);
-                
+            
+        }
+        else{
+            require(ICarbonCredit(carbonCreditNFT).checkExist(parcel.tokenId),"NFT does not exist.");
+            uint amount = calculateTotalAmount(parcel,_noCarbonUnits);
+                if(_currency==address(1)) {
+                   require(msg.value >= amount,"Invalid amount.");
+                   (bool sentToSeller,) = payable(parcel.seller).call{value: parcel.pricePerCarbonUnit*_noCarbonUnits}("");
+                   platformCollection[_currency] += (platformFeePercent*parcel.pricePerCarbonUnit*_noCarbonUnits)/10000;
+                   require(sentToSeller,"Ether transfer failed.");
+                   if(msg.value > amount){
+                   (bool sent,) = payable(msg.sender).call{value: msg.value - amount}("");}
+                } 
+             else {
+                   require(allowedCurrencies[_currency],"Invalid currency");
+                   IERC20(_currency).transferFrom(msg.sender, parcel.seller, parcel.pricePerCarbonUnit*_noCarbonUnits);
+                   IERC20(_currency).transferFrom(msg.sender, address(this), (platformFeePercent*parcel.pricePerCarbonUnit*_noCarbonUnits)/10000);
+                   platformCollection[_currency] += (platformFeePercent*parcel.pricePerCarbonUnit*_noCarbonUnits)/10000;
+            }
+                IERC20(ICarbonCredit(carbonCreditNFT).addressCarbonUnits()).transferFrom(parcel.seller,msg.sender,_noCarbonUnits);   
             }
     }
 
@@ -171,11 +165,21 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
         stakeEnabled = _if;
     }
 
-    function saleTransaction(bool _stakeEnabled, address _seller, uint _tokenId, uint _noCarbonUnits, uint _totalAmount, uint _sellerAmount, address _currencyAddress) internal {
+    function saleTransaction(address _seller, uint _tokenId, uint _noCarbonUnits, uint _totalAmount, uint _sellerAmount, address _currencyAddress) internal {
         SaleReceipt storage saleReceipt = SaleReceiptForBuyer[msg.sender];
         if(stakeEnabled){
         SellerAmounts[_seller][_tokenId].currencyAddress = _currencyAddress;
         SellerAmounts[_seller][_tokenId].amount += _sellerAmount;
+        }
+        else{
+            if(_currencyAddress==address(1)){
+            (bool sentAmount,) = payable(_seller).call{value: _sellerAmount}("");
+            require(sentAmount,"Amount failed to transfer to seller.");
+            }
+            else{
+                IERC20(_currencyAddress).transferFrom(msg.sender, _seller, _sellerAmount);
+                IERC20(_currencyAddress).transferFrom(msg.sender, address(this), _totalAmount-_sellerAmount);
+            }
         }
         saleReceipt.totalTransactions++;
         PerSale storage perSale = saleReceipt.receiptPerTransaction[saleReceipt.totalTransactions];
