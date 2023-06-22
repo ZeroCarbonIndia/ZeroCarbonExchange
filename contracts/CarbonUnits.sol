@@ -8,10 +8,12 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 
-contract ZeroCarbonUnitToken is Context, IERC20, IERC20Metadata, Initializable {
+contract ZeroCarbonUnitToken is Context, Initializable {
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
+
+    mapping(address => mapping(address => mapping(uint => bool ))) private _allowancePerTx;
 
     uint256 private _totalSupply;
     uint256 private _maxSupply;
@@ -23,6 +25,10 @@ contract ZeroCarbonUnitToken is Context, IERC20, IERC20Metadata, Initializable {
     address public zeroCarbonNFT;
 
     address public admin;
+
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 
     struct CarbonUnitsTransactions {
         uint256 txId;
@@ -56,19 +62,19 @@ contract ZeroCarbonUnitToken is Context, IERC20, IERC20Metadata, Initializable {
         registerCarbonUnits(_to, _amount, _expirationPeriod);
     }
 
-    function name() public view virtual override returns (string memory) {
+    function name() public view virtual returns (string memory) {
         return _name;
     }
 
-    function symbol() public view virtual override returns (string memory) {
+    function symbol() public view virtual returns (string memory) {
         return _symbol;
     }
 
-    function decimals() public view virtual override returns (uint8) {
+    function decimals() public view virtual returns (uint8) {
         return _decimals;
     }
 
-    function totalSupply() public view virtual override returns (uint256) {
+    function totalSupply() public view virtual returns (uint256) {
         return _totalSupply;
     }
 
@@ -76,34 +82,47 @@ contract ZeroCarbonUnitToken is Context, IERC20, IERC20Metadata, Initializable {
         return _maxSupply;
     }
 
-    function balanceOf(address account) public view virtual override returns (uint256) {
+    function balanceOf(address account) public view virtual returns (uint256) {
         return _balances[account];
     }
 
-    function transfer(address to, uint256 amount) public virtual override returns (bool) {
+    function transfer(address to, uint256 amount) public virtual returns (bool) {
         address owner = _msgSender();
         _transfer(owner, to, amount);
         return true;
     }
 
-    function allowance(address owner, address spender) public view virtual override returns (uint256) {
+    function allowance(address owner, address spender) public view virtual returns (uint256) {
         return _allowances[owner][spender];
     }
 
-    function approve(address spender, uint256 amount) public virtual override returns (bool) {
+    function approveForTxId() public returns(bool) {
+
+    }
+
+    function approve(address spender, uint256 referenceTxId) public virtual returns (bool) {
+        require(carbonHistory[msg.sender].CarbonHistoryPerTx[referenceTxId].expirationPeriod>block.timestamp,"Carbon credits are expired.");
         address owner = _msgSender();
+        uint amount = carbonHistory[msg.sender].CarbonHistoryPerTx[referenceTxId].amount;
+        _allowancePerTx[msg.sender][spender][referenceTxId] = true;
         _approve(owner, spender, amount);
         return true;
     }
 
     function transferFrom(
         address from,
-        address to,
-        uint256 amount
-    ) public virtual override returns (bool) {
+        uint referenceTxId,
+        address to
+    ) public virtual returns (bool) {
+        require(carbonHistory[from].CarbonHistoryPerTx[referenceTxId].expirationPeriod>block.timestamp,"Carbon credits are expired.");
+        require(_allowancePerTx[from][msg.sender][referenceTxId]==true,"Not allowed to take action on the carbon units");
         address spender = _msgSender();
+        uint amount = carbonHistory[from].CarbonHistoryPerTx[referenceTxId].amount;
+        uint expirationPeriod = carbonHistory[from].CarbonHistoryPerTx[referenceTxId].expirationPeriod;
         _spendAllowance(from, spender, amount);
         _transfer(from, to, amount);
+        registerCarbonUnits(to, amount, expirationPeriod);
+        _allowancePerTx[from][msg.sender][referenceTxId] = false;
         return true;
     }
 
