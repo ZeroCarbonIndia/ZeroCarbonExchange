@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "contracts/KYC Module/interface/IIdentityRegistry.sol";
+import "hardhat/console.sol";
 
 
 contract ZeroCarbonUnitToken is Context, Initializable {
@@ -47,17 +49,22 @@ contract ZeroCarbonUnitToken is Context, Initializable {
         _;
     }
     
-    function init(string memory name_, string memory symbol_, uint8 decimals_, address _collectionAddress, address _admin) external initializer{
+    function init(string memory name_, string memory symbol_, uint8 decimals_, address _collectionAddress,address _identityRegistry, address _admin) external initializer{
         _name = name_;
         _symbol = symbol_;
         _decimals = decimals_;
-        // identityRegistry = _identityRegistry;
+        identityRegistry = _identityRegistry;
         zeroCarbonNFT = _collectionAddress;
         admin = _admin;
     }
 
+    function verified(address _to) public view returns(bool) {
+        return IIdentityRegistry(identityRegistry).isVerified(_to);
+    }
+
     function mint(address _to, uint256 _amount, uint _expirationPeriod) external {
         require(msg.sender==zeroCarbonNFT,"Call only allowed by the ZeroCaarbonNFT");
+        require(verified(_to),"Identity not verified.");
         _mint(_to, _amount);
         registerCarbonUnits(_to, _amount, _expirationPeriod);
     }
@@ -87,6 +94,7 @@ contract ZeroCarbonUnitToken is Context, Initializable {
     }
 
     function transfer(address to, uint256 amount) public virtual returns (bool) {
+        require(msg.sender== admin,"Prohibited function.");
         address owner = _msgSender();
         _transfer(owner, to, amount);
         return true;
@@ -112,16 +120,20 @@ contract ZeroCarbonUnitToken is Context, Initializable {
     function transferFrom(
         address from,
         uint referenceTxId,
-        address to
+        address to,
+        uint amount
     ) public virtual returns (bool) {
         require(carbonHistory[from].CarbonHistoryPerTx[referenceTxId].expirationPeriod>block.timestamp,"Carbon credits are expired.");
         require(_allowancePerTx[from][msg.sender][referenceTxId]==true,"Not allowed to take action on the carbon units");
+        require(IIdentityRegistry(identityRegistry).isVerified(to),"Identity of receiver is not verified.");
         address spender = _msgSender();
-        uint amount = carbonHistory[from].CarbonHistoryPerTx[referenceTxId].amount;
+        uint amountIn = carbonHistory[from].CarbonHistoryPerTx[referenceTxId].amount;
+        require(amount<=amountIn,"Not enough amount in the package.");
         uint expirationPeriod = carbonHistory[from].CarbonHistoryPerTx[referenceTxId].expirationPeriod;
         _spendAllowance(from, spender, amount);
         _transfer(from, to, amount);
         registerCarbonUnits(to, amount, expirationPeriod);
+        deRegsiterCarbonUnits(from, amount, referenceTxId);
         _allowancePerTx[from][msg.sender][referenceTxId] = false;
         return true;
     }
@@ -167,9 +179,6 @@ contract ZeroCarbonUnitToken is Context, Initializable {
 
     function _mint(address account, uint256 amount) internal virtual {
         require(account != address(0), "ERC20: mint to the zero address");
-
-        require(_beforeTokenTransfer(address(0), account, amount),"Identity not verified.");
-        require(_totalSupply+amount <= _maxSupply,"Total supply cannot be greater than maximum supply.");
         _totalSupply += amount;
         _balances[account] += amount;
         emit Transfer(address(0), account, amount);
@@ -224,6 +233,10 @@ contract ZeroCarbonUnitToken is Context, Initializable {
         carbonHistory[_to].txId++;
         carbonHistory[_to].CarbonHistoryPerTx[carbonHistory[_to].txId].amount = _amount;
         carbonHistory[_to].CarbonHistoryPerTx[carbonHistory[_to].txId].expirationPeriod = _expirationPeriod;
+    }
+
+    function deRegsiterCarbonUnits(address _to, uint256 _amount, uint256 referenceTxId) internal {
+        carbonHistory[_to].CarbonHistoryPerTx[referenceTxId].amount -= _amount;
     }
 
     function _beforeTokenTransfer(

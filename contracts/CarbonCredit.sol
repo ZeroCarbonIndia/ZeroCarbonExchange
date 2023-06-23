@@ -24,32 +24,39 @@ struct CarbonUnitsHistory {
         uint256 expirationPeriod;
     }
 
+mapping(uint256 => uint256) public maxSupplyPerCreditNFT;
+mapping(uint256 => uint256) public currentSupplyPerCreditNFT;
+
 
 modifier onlyAdmin{
     require(msg.sender==admin,"You are not the admin.");
     _;
 }
 
-function initialize(string memory _name, string memory _symbol, address _admin,address _exchange) external initializer {
+function initialize(string memory _name, string memory _symbol, address _admin,address _exchange, address _token) external initializer {
     require(_admin != address(0), "ZAA"); //Zero Address for Admin
     require(_exchange != address(0), "ZAM");//Zero Address for Marketplace
     __ERC721_init_unchained(_name, _symbol);
     __EIP712_init_unchained(_name, "1");
     admin = _admin;
     exchange = _exchange;
+    carbonUnitsToken = _token;
     }
 
 function MintNft(address _to, uint _tokenId, string memory _tokenURI,uint256 _maxCarbonUnits, uint256 _noCarbonUnits, uint256 _expirationPeriod) external{
     require(msg.sender== exchange, "Call only allowed from Carbon Exchange");
     if(_exists(_tokenId)){
+    require((currentSupplyPerCreditNFT[_tokenId]+_noCarbonUnits)<=maxSupplyPerCreditNFT[_tokenId],"Total Supply for Carbon units cannot exceed max supply.");
     ICarbonUnits(carbonUnitsToken).mint(_to, _noCarbonUnits, _expirationPeriod);
+    currentSupplyPerCreditNFT[_tokenId] += _noCarbonUnits;    
     }
     else {
     _safeMint(carbonUnitsToken, _tokenId);
+    maxSupplyPerCreditNFT[_tokenId] = _maxCarbonUnits;
     _setTokenURI(_tokenId, _tokenURI);
     totalSupply++;
     ICarbonUnits(carbonUnitsToken).mint(_to, _noCarbonUnits, _expirationPeriod);
-        
+    currentSupplyPerCreditNFT[_tokenId] += _noCarbonUnits;    
      }
 }
 
