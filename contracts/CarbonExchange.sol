@@ -12,6 +12,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "hardhat/console.sol";
 import "contracts/interface/ICarbonCredit.sol";
 import "contracts/interface/ICarbonUnits.sol";
+import "contracts/interface/IIdentityFactory.sol";
 
 contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, ReentrancyGuardUpgradeable {
 
@@ -23,6 +24,8 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
     uint96 public platformFeePercent; // in BP 10000.
 
     address public tether;
+
+    address identityFactory;
 
     bool public stakeEnabled;
 
@@ -64,12 +67,14 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
 
     mapping(address => uint) public platformCollection;
 
+    mapping(address => bool) public identityRegistered;
+
     modifier onlyAdmin() {
         require(msg.sender == admin,"You are not the admin.");
         _;
     }
 
-    function initialize(address _admin, uint96 _platformFeePercent, address _tether, address _carbonCreditNFT) external initializer {
+    function initialize(address _admin, uint96 _platformFeePercent, address _tether, address _carbonCreditNFT, address _identityFactory) external initializer {
         require(_admin!=address(0),"Zero address.");
         require(_tether!=address(0),"Zero address");
         __EIP712_init_unchained("Zero_Carbon", "1");
@@ -77,6 +82,7 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
         platformFeePercent = _platformFeePercent;
         tether = _tether;
         carbonCreditNFT = _carbonCreditNFT;
+        identityFactory = _identityFactory;
         allowedCurrencies[tether] = true;
     }
 
@@ -102,11 +108,15 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
 
     function buyNFT(Credit.CarbonCreditParcel memory parcel,uint256 _noCarbonUnits,
         bool isPrimary,
-        address _currency) external payable nonReentrant returns(address){
+        address _currency, uint16 _countryCode) external payable nonReentrant returns(address){
         
         address sellerAddress = verifyParcel(parcel);
 
         require(sellerAddress==parcel.seller,"Invalid seller.");
+        if(!identityRegistered[msg.sender]){
+            registerIdentity(_countryCode);
+            identityRegistered[msg.sender] = true;
+        }
         if(isPrimary) {
            uint amount = calculateTotalAmount(parcel,_noCarbonUnits);
 
@@ -152,6 +162,10 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
 
     function setAdmin(address _newAdmin) external onlyAdmin{
         admin  = _newAdmin;
+    }
+
+    function registerIdentity(uint16 _countryCode) internal returns(address){
+        return IIdentityFactory(identityFactory).createAndRegisterIdentity(msg.sender,_countryCode);
     }
 
     function calculateTotalAmount(Credit.CarbonCreditParcel memory parcel,uint256 _noCarbonUnits) public view returns(uint256){

@@ -15,6 +15,4 @@ interface ICarbonCredit {
 
     function addressCarbonUnits() external view returns(address);
 
-
-
 }

@@ -28,13 +28,14 @@ contract IdentityFactory is Initializable{
         identityRegistry = _identityRegistry;
     }
 
-    function createAndRegisterIdentity(uint16 _countryCode) external returns(address){
+    function createAndRegisterIdentity(address _address, uint16 _countryCode) external returns(address){
+        require(identityAddress[_address]==address(0),"Already registered!");
         totalIdentitiesDeployed++;
-        bytes32 salt = keccak256(abi.encodePacked(totalIdentitiesDeployed, msg.sender, identityTemplate, _countryCode));
+        bytes32 salt = keccak256(abi.encodePacked(totalIdentitiesDeployed, _address, identityTemplate, _countryCode));
         address identity = ClonesUpgradeable.cloneDeterministic(identityTemplate, salt);
-        identityAddress[msg.sender] = identity;
-        IID(identity).init(msg.sender, false);
-        IIdentityRegistry(identityRegistry).registerIdentity(msg.sender,IIdentity(identity), _countryCode);
+        identityAddress[_address] = identity;
+        IID(identity).init(_address, false);
+        IIdentityRegistry(identityRegistry).registerIdentity(_address,IIdentity(identity), _countryCode);
         return identity;    
     }
 

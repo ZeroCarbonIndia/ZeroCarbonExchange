@@ -55,7 +55,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
         registryStorage = await new IdentityRegistryStorage__factory(owner).deploy();
         trustedIssuerRegistry = await new TrustedIssuersRegistry__factory(owner).deploy();
         claimTopicsRegistry = await new ClaimTopicsRegistry__factory(owner).deploy();
-        await exchange.connect(owner).initialize(owner.address,200,usdt.address,nft.address);
+        await exchange.connect(owner).initialize(owner.address,200,usdt.address,nft.address,idFactory.address);
         await nft.connect(owner).initialize("Zero Carbon NFT","ZCC",owner.address,exchange.address,token.address);
         await token.connect(owner).init("ZeroCarbon Token","ZCU",0,nft.address,registry.address,owner.address);
         await idFactory.connect(owner).init(id.address,registry.address,owner.address);
@@ -63,8 +63,6 @@ describe("Zero Carbon Platform Test Cases",()=>{
         await registryStorage.connect(owner).init();
         await registryStorage.connect(owner).bindIdentityRegistry(registry.address);
         await registry.connect(owner).addAgent(idFactory.address);
-        await idFactory.connect(owner).createAndRegisterIdentity(1);
-        await idFactory.connect(signer[1]).createAndRegisterIdentity(1);
     })
 
     it("Testing parcel signing and listing.", async()=>{
@@ -123,7 +121,29 @@ describe("Zero Carbon Platform Test Cases",()=>{
         console.log("New state of seller stake: ", await exchange.stakeEnabled());
     })
 
-    it.only("Buy carbon credits for the first time.", async()=>{
+    it("Buy carbon credits for the first time.", async()=>{
+        const seller = await new CarbonCreditParcel({
+            _contract: exchange,
+            _signer : owner
+        })
+        const parcel = await seller.createParcel(
+            owner.address,
+            1,
+            15,
+            100,
+            1222222,
+            "Sample"
+        );
+        let addressReturned = await exchange.verifyParcel(parcel);
+        console.log("Address owner: ", owner.address, "   Returned address: ", addressReturned);
+        await exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000});
+        console.log("Proof of sale: ", await token.balanceOf(signer[1].address));
+        console.log("Max supply for carbon credit: ", await nft.maxSupplyPerCreditNFT(1));
+        console.log("Total supply for carbon credit: ", await nft.currentSupplyPerCreditNFT(1));
+    })
+
+    it.only("Sending carbon credits without listing.", async()=>{
+
         const seller = await new CarbonCreditParcel({
             _contract: exchange,
             _signer : owner
@@ -138,9 +158,16 @@ describe("Zero Carbon Platform Test Cases",()=>{
         );
         let addressReturned = await exchange.verifyParcel(parcel);
         console.log("Address owner: ", owner.address, "   Returned address: ", addressReturned);
-        await exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,{value:10000});
+        await exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000});
         console.log("Proof of sale: ", await token.balanceOf(signer[1].address));
-        console.log("Max supply for carbon credit: ", await nft.maxSupplyPerCreditNFT(1));
-        console.log("Total supply for carbon credit: ", await nft.currentSupplyPerCreditNFT(1));
+        console.log(await registry.isVerified(signer[1].address));
+
+        await exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000});
+        console.log("Proof of second sale: ", await token.balanceOf(signer[1].address));
+        console.log(await nft.currentSupplyPerCreditNFT(1));
+
+
+
+        // await expect(token.connect(signer[1]).transfer(signer[2].address,2)).to.be.revertedWith("Prohibited function.")
     })
 })

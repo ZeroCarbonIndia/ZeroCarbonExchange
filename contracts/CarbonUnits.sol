@@ -133,7 +133,7 @@ contract ZeroCarbonUnitToken is Context, Initializable {
         _spendAllowance(from, spender, amount);
         _transfer(from, to, amount);
         registerCarbonUnits(to, amount, expirationPeriod);
-        deRegsiterCarbonUnits(from, amount, referenceTxId);
+        deRegisterCarbonUnits(from, amount, referenceTxId);
         _allowancePerTx[from][msg.sender][referenceTxId] = false;
         return true;
     }
@@ -235,7 +235,7 @@ contract ZeroCarbonUnitToken is Context, Initializable {
         carbonHistory[_to].CarbonHistoryPerTx[carbonHistory[_to].txId].expirationPeriod = _expirationPeriod;
     }
 
-    function deRegsiterCarbonUnits(address _to, uint256 _amount, uint256 referenceTxId) internal {
+    function deRegisterCarbonUnits(address _to, uint256 _amount, uint256 referenceTxId) internal {
         carbonHistory[_to].CarbonHistoryPerTx[referenceTxId].amount -= _amount;
     }
 
