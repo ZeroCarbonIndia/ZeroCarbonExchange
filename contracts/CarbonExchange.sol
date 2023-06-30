@@ -221,13 +221,14 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
     }
 
     function withdrawPlatformAmount(address _currency) external onlyAdmin nonReentrant{
-        require(allowedCurrencies[_currency],"Currency not allowed!");
+        
         if(_currency==address(1)) {
             uint amount = address(this).balance;
             (bool sent,) = payable(msg.sender).call{value:amount}("");
             require(sent);
         }
         else{
+            require(allowedCurrencies[_currency],"Currency not allowed!");
             uint amount = IERC20(_currency).balanceOf(address(this));
             IERC20(_currency).transfer(msg.sender, amount);
         }
