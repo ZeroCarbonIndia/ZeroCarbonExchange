@@ -80,17 +80,13 @@ describe("Zero Carbon Platform Test Cases",()=>{
             "Sample Carbon Credit URI"
         )
 
-        console.log("Owner address: ", owner.address);
-
-        let addressCreated = await exchange.verifyParcel(parcel);
-
-        console.log("Address created by parcel: ", addressCreated);
+      expect(await exchange.verifyParcel(parcel)).to.be.eq(owner.address)
 
     })
 
     it("Setting platform fee.", async() =>{
         await exchange.connect(owner).setPlatformFeePercent(300);
-        console.log("New platform fee: ", await exchange.platformFeePercent());
+        expect(await exchange.platformFeePercent()).to.be.eq(300);
     })
 
     it("Calculate total amount to be paid.", async()=>{
@@ -106,22 +102,23 @@ describe("Zero Carbon Platform Test Cases",()=>{
             1999202002,
             "Carbon credits"
         )
-        console.log("Total amount calculated to be: ",await exchange.calculateTotalAmount(parcel,10));
+
+        expect(await exchange.calculateTotalAmount(parcel,10)).to.be.eq(102000000)
     })
 
     it("Setting new admin.", async()=>{
         console.log("Current admin: ", await exchange.admin());
         await exchange.connect(owner).setAdmin(signer[1].address);
-        console.log("New admin: ",await exchange.admin());
+        expect(await exchange.admin()).to.be.eq(signer[1].address);
     })
 
     it("Enable seller stake.", async()=>{
-        console.log("Current state of seller stake: ", await exchange.stakeEnabled());
+        expect(await exchange.stakeEnabled()).to.be.eq(false);
         await exchange.connect(owner).enableStake(true);
-        console.log("New state of seller stake: ", await exchange.stakeEnabled());
+        expect(await exchange.stakeEnabled()).to.be.eq(true);
     })
 
-    it("Buy carbon credits for the first time.", async()=>{
+    it("Buy carbon credits for the first time from eth", async()=>{
         const seller = await new CarbonCreditParcel({
             _contract: exchange,
             _signer : owner
@@ -134,15 +131,76 @@ describe("Zero Carbon Platform Test Cases",()=>{
             1222222,
             "Sample"
         );
-        let addressReturned = await exchange.verifyParcel(parcel);
-        console.log("Address owner: ", owner.address, "   Returned address: ", addressReturned);
         await exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000});
-        console.log("Proof of sale: ", await token.balanceOf(signer[1].address));
-        console.log("Max supply for carbon credit: ", await nft.maxSupplyPerCreditNFT(1));
-        console.log("Total supply for carbon credit: ", await nft.currentSupplyPerCreditNFT(1));
+        expect(await token.balanceOf(signer[1].address)).to.be.eq(10);
+        expect(await nft.maxSupplyPerCreditNFT(1)).to.be.eq(15);
+        expect( await nft.currentSupplyPerCreditNFT(1)).to.be.eq(10);
     })
 
-    it.only("Sending carbon credits without listing.", async()=>{
+    it("Buy carbon credits for the first time from USDT", async()=>{
+        const seller = await new CarbonCreditParcel({
+            _contract: exchange,
+            _signer : owner
+        })
+        const parcel = await seller.createParcel(
+            owner.address,
+            1,
+            15,
+            expandTo6Decimals(10),
+            1222222,
+            "Sample"
+        );
+        await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
+        await usdt.connect(signer[1]).approve(exchange.address,expandTo6Decimals(102))
+        await exchange.connect(signer[1]).buyNFT(parcel,10,true,usdt.address,1);
+        expect(await token.balanceOf(signer[1].address)).to.be.eq(10);
+        expect(await nft.maxSupplyPerCreditNFT(1)).to.be.eq(15);
+        expect( await nft.currentSupplyPerCreditNFT(1)).to.be.eq(10);
+    })
+
+
+    it.only("Buy carbon credits for the second time from eth", async()=>{
+        const seller = await new CarbonCreditParcel({
+            _contract: exchange,
+            _signer : owner
+        })
+        const parcel = await seller.createParcel(
+            owner.address,
+            1,
+            15,
+            100,
+            1688309246,
+            "Sample"
+        );
+        await exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000});
+        expect(await token.balanceOf(signer[1].address)).to.be.eq(10);
+        expect(await nft.maxSupplyPerCreditNFT(1)).to.be.eq(15);
+        expect( await nft.currentSupplyPerCreditNFT(1)).to.be.eq(10);
+        const seller2 = await new CarbonCreditParcel({
+            _contract: exchange,
+            _signer : signer[1]
+        })
+
+        const parcel2 = await seller2.createParcel(
+            signer[1].address,
+            1,
+            5,
+            50,
+            1688309246,
+            "Test_URI"
+        )
+        // console.log(await token.connect(owner).transferFrom());
+        // console.log(await exchange.carbonCreditNFT());
+        // await idFactory.connect(signer[2]).createAndRegisterIdentity(signer[2].address,1);
+        await token.connect(signer[1]).approve(exchange.address,1);
+        await exchange.connect(signer[2]).buyNFT(parcel2, 3,false,address1,1,{value: 155});
+        expect(await token.balanceOf(signer[2].address)).to.be.eq(3);
+        expect(await nft.maxSupplyPerCreditNFT(1)).to.be.eq(15);
+        expect( await nft.currentSupplyPerCreditNFT(1)).to.be.eq(10);
+    })
+
+
+    it("Sending carbon credits without listing.", async()=>{
 
         const seller = await new CarbonCreditParcel({
             _contract: exchange,

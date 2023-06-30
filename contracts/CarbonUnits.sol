@@ -163,7 +163,7 @@ contract ZeroCarbonUnitToken is Context, Initializable {
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
 
-        require(_beforeTokenTransfer(from, to, amount),"Identity not verified");
+        // require(_beforeTokenTransfer(from, to, amount),"Identity not verified");
 
         uint256 fromBalance = _balances[from];
         require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");

@@ -13,10 +13,10 @@ export default {
       allowUnlimitedContractSize: true,
 
     },
-    mumbaitest: {
-      url: "https://rpc-mumbai.maticvigil.com/",
-      accounts: [`0x${process.env.PVTKEY}`]
-    },
+    // mumbaitest: {
+    //   url: "https://rpc-mumbai.maticvigil.com/",
+    //   accounts: [`0x${process.env.PVTKEY}`]
+    // },
     // matic: {
     //   url: "https://polygon-rpc.com/",
     //   accounts: [`0x${process.env.PVTKEY}`]
@@ -46,7 +46,7 @@ export default {
     disambiguatePaths: false,
     runOnCompile: true,
     strict: false,
-    only: ['NFTContract','Marketplace','chronFactory']
+    only: ['ZeroCarbonUnitToken','CarbonExchange','ZeroCarbonCredit']
   },
   solidity: {
     version: "0.8.17",

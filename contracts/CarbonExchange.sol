@@ -137,14 +137,24 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
         }
         else{
             require(ICarbonCredit(carbonCreditNFT).checkExist(parcel.tokenId),"NFT does not exist.");
+          
             uint amount = calculateTotalAmount(parcel,_noCarbonUnits);
+            
                 if(_currency==address(1)) {
                    require(msg.value >= amount,"Invalid amount.");
+                    
                    (bool sentToSeller,) = payable(parcel.seller).call{value: parcel.pricePerCarbonUnit*_noCarbonUnits}("");
+                  
                    platformCollection[_currency] += (platformFeePercent*parcel.pricePerCarbonUnit*_noCarbonUnits)/10000;
+                   
                    require(sentToSeller,"Ether transfer failed.");
+                    
                    if(msg.value > amount){
-                   (bool sent,) = payable(msg.sender).call{value: msg.value - amount}("");}
+                    
+                   (bool sent,) = payable(msg.sender).call{value: msg.value - amount}("");
+                   
+                   require(sent,"Ether transfer failed.");}
+
                 } 
              else {
                    require(allowedCurrencies[_currency],"Invalid currency");
@@ -152,7 +162,9 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
                    IERC20(_currency).transferFrom(msg.sender, address(this), (platformFeePercent*parcel.pricePerCarbonUnit*_noCarbonUnits)/10000);
                    platformCollection[_currency] += (platformFeePercent*parcel.pricePerCarbonUnit*_noCarbonUnits)/10000;
             }
-                IERC20(ICarbonCredit(carbonCreditNFT).addressCarbonUnits()).transferFrom(parcel.seller,msg.sender,_noCarbonUnits);   
+                
+                ICarbonUnits(ICarbonCredit(carbonCreditNFT).addressCarbonUnits()).transferFrom(parcel.seller,1,msg.sender,_noCarbonUnits);   
+                 
             }
     }
 
@@ -170,8 +182,7 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
 
     function calculateTotalAmount(Credit.CarbonCreditParcel memory parcel,uint256 _noCarbonUnits) public view returns(uint256){
         uint platformAmount = (platformFeePercent*parcel.pricePerCarbonUnit*_noCarbonUnits)/10000;
-        uint totalAmount;
-        totalAmount = platformAmount+(parcel.pricePerCarbonUnit)*_noCarbonUnits;
+        uint totalAmount = platformAmount+(parcel.pricePerCarbonUnit)*_noCarbonUnits;
         return (totalAmount);
     }
 
