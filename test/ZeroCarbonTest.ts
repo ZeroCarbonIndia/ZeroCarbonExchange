@@ -23,6 +23,7 @@ import { expandTo18Decimals,
     expandTo6Decimals } from "./utilities/utilities";
 import { expect } from "chai";
 import CarbonCreditParcel from "./utilities/parcel";
+import { time } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("Zero Carbon Platform Test Cases",()=>{
 
@@ -134,7 +135,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
             1,
             15,
             100,
-            1222222,
+            1788309246,
             "Sample"
         );
         await exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000});
@@ -153,7 +154,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
             1,
             15,
             expandTo6Decimals(10),
-            1222222,
+            1788309246,
             "Sample"
         );
         await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
@@ -253,7 +254,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
             1,
             1000,
             100,
-            1222222,
+            1788309246,
             "Sample"
         );
         let addressReturned = await exchange.verifyParcel(parcel);
@@ -281,7 +282,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
             1,
             15,
             100,
-            1222222,
+            1788309246,
             "Sample"
         );
         await exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000});
@@ -299,7 +300,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
             1,
             15,
             100,
-            1222222,
+            1788309246,
             "Sample"
         );
         await exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000});
@@ -318,7 +319,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
             1,
             15,
             expandTo6Decimals(20),
-            1222222,
+            1788309246,
             "Sample"
         );
         await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
@@ -344,7 +345,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
             1,
             15,
             expandTo6Decimals(20),
-            1222222,
+            1788309246,
             "Sample"
         );
 
@@ -361,7 +362,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
             1,
             15,
             100,
-            1222222,
+            1788309246,
             "Sample"
         );
         await exchange.connect(owner).enableStake(true);
@@ -373,7 +374,21 @@ describe("Zero Carbon Platform Test Cases",()=>{
     })
 
     describe("Negative test cases for exchange", async ()=>{
-
+        it("invalid expiration time test case", async()=>{
+            const seller = await new CarbonCreditParcel({
+                _contract: exchange,
+                _signer : owner
+            })
+            const parcel = await seller.createParcel(
+                signer[1].address,
+                1,
+                15,
+                100,
+                168836,
+                "Sample"
+            );
+            await expect(exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000})).to.be.revertedWith("Invalid Time period.");
+        })
         it ("invalid signer test case", async()=>{
             const seller = await new CarbonCreditParcel({
                 _contract: exchange,
@@ -537,7 +552,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 1,
                 15,
                 expandTo6Decimals(20),
-                1222222,
+                1788309246,
                 "Sample"
             );
             await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
@@ -555,7 +570,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
 
     describe("Negative Test cases for Carbon credit NFT",async()=>{
         it("Negative test cases for minting",async()=>{
-            await expect(nft.connect(owner).MintNft(signer[1].address,1,"Test_URI",20,3,1222222)).to.be.revertedWith("Call only allowed from Carbon Exchange");
+            await expect(nft.connect(owner).MintNft(signer[1].address,1,"Test_URI",20,3,1788309246)).to.be.revertedWith("Call only allowed from Carbon Exchange");
         })
         it("Current supply greater than max supply",async()=>{
             const seller = await new CarbonCreditParcel({
@@ -567,7 +582,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 1,
                 15,
                 expandTo6Decimals(20),
-                1222222,
+                1788309246,
                 "Sample"
             );
             await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
@@ -588,7 +603,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 1,
                 15,
                 expandTo6Decimals(20),
-                1222222,
+                1788309246,
                 "Sample"
             );
             await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
@@ -609,7 +624,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 1,
                 15,
                 expandTo6Decimals(20),
-                1222222,
+                1788309246,
                 "Sample"
             );
             await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
@@ -630,7 +645,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 1,
                 15,
                 expandTo6Decimals(20),
-                1222222,
+                1788309246,
                 "Sample"
             );
             await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
@@ -647,5 +662,238 @@ describe("Zero Carbon Platform Test Cases",()=>{
             expect(await nft.supportsInterface("0x80ac58cd"));
         })
 
+
     })
+
+            describe("Test cases for carbon units contract",async()=>{
+            it("Getting name, symbol and decimals of the contract",async()=>{
+                 expect(await token.name()).to.be.eq("ZeroCarbon Token");
+                 expect (await token.symbol()).to.be.eq("ZCU");
+                 expect(await token.decimals()).to.be.eq(0);
+            })
+
+            it("Getting total supply of the token",async()=>{
+                const seller = await new CarbonCreditParcel({
+                    _contract: exchange,
+                    _signer : owner
+                })
+                const parcel = await seller.createParcel(
+                    owner.address,
+                    1,
+                    15,
+                    expandTo6Decimals(10),
+                    1788309246,
+                    "Sample"
+                );
+                await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
+                await usdt.connect(signer[1]).approve(exchange.address,expandTo6Decimals(102))
+                await exchange.connect(signer[1]).buyNFT(parcel,10,true,usdt.address,1);
+                expect(await token.totalSupply()).to.be.eq(10);
+                expect(await token.maxSupply()).to.be.eq(0);
+            })
+
+            it("Transfer function testing",async()=>{
+                const seller = await new CarbonCreditParcel({
+                    _contract: exchange,
+                    _signer : owner
+                })
+                const parcel = await seller.createParcel(
+                    owner.address,
+                    1,
+                    15,
+                    expandTo6Decimals(10),
+                    1788309246,
+                    "Sample"
+                );
+                await usdt.connect(owner).approve(exchange.address,expandTo6Decimals(102))
+                await exchange.connect(owner).buyNFT(parcel,10,true,usdt.address,1);
+                await token.connect(owner).transfer(signer[1].address,5);
+                expect(await token.balanceOf(signer[1].address)).to.be.eq(5);
+            })
+
+            it("Increase and decrease allowance testing",async()=>{
+                const seller = await new CarbonCreditParcel({
+                    _contract: exchange,
+                    _signer : owner
+                })
+                const parcel = await seller.createParcel(
+                    owner.address,
+                    1,
+                    15,
+                    expandTo6Decimals(10),
+                    1988309246,
+                    "Sample"
+                );
+                await usdt.connect(owner).approve(exchange.address,expandTo6Decimals(102))
+                await exchange.connect(owner).buyNFT(parcel,10,true,usdt.address,1);
+                expect(await token.allowance(owner.address,signer[1].address)).to.be.eq(0);
+                await token.connect(owner).approve(signer[1].address,1);
+                expect(await token.allowance(owner.address,signer[1].address)).to.be.eq(10);
+                await token.connect(owner).increaseAllowance(signer[1].address,3);
+                expect(await token.allowance(owner.address,signer[1].address)).to.be.eq(13);
+                await token.connect(owner).decreaseAllowance(signer[1].address,2);   
+                expect(await token.allowance(owner.address,signer[1].address)).to.be.eq(11);
+            })
+
+            describe("Negative test cases for Carbon units contract",async()=>{
+                it("Mint function called by a non-verified address",async()=>{
+                    await expect( token.connect(signer[1]).mint(signer[1].address,2,198830924)).of.be.revertedWith("Identity not verified.")
+                })
+                it("Calling Mint function by other than NFT contract",async()=>{
+                    const seller = await new CarbonCreditParcel({
+                        _contract: exchange,
+                        _signer : owner
+                    })
+                    const parcel = await seller.createParcel(
+                        owner.address,
+                        1,
+                        15,
+                        expandTo6Decimals(10),
+                        1788309246,
+                        "Sample"
+                    );
+                    await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
+                    await usdt.connect(signer[1]).approve(exchange.address,expandTo6Decimals(102))
+                    await exchange.connect(signer[1]).buyNFT(parcel,10,true,usdt.address,1);
+
+                   await expect(token.connect(signer[1]).mint(signer[1].address,5,1988309246)).to.be.revertedWith("Call only allowed by the ZeroCarbonNFT");
+                })
+                it("calling Transfer function from a non-admin account testing",async()=>{
+                    const seller = await new CarbonCreditParcel({
+                        _contract: exchange,
+                        _signer : owner
+                    })
+                    const parcel = await seller.createParcel(
+                        owner.address,
+                        1,
+                        15,
+                        expandTo6Decimals(10),
+                        1788309246,
+                        "Sample"
+                    );
+                    await usdt.connect(owner).approve(exchange.address,expandTo6Decimals(102))
+                    await exchange.connect(owner).buyNFT(parcel,10,true,usdt.address,1);
+                    await expect(token.connect(signer[1]).transfer(signer[3].address,5)).to.be.revertedWith("You are not the admin.");
+                   
+                })
+    
+                it(" decreasing allowance below zero testing",async()=>{
+                    const seller = await new CarbonCreditParcel({
+                        _contract: exchange,
+                        _signer : owner
+                    })
+                    const parcel = await seller.createParcel(
+                        owner.address,
+                        1,
+                        15,
+                        expandTo6Decimals(10),
+                        1988309246,
+                        "Sample"
+                    );
+                    await usdt.connect(owner).approve(exchange.address,expandTo6Decimals(102))
+                    await exchange.connect(owner).buyNFT(parcel,10,true,usdt.address,1);
+                    expect(await token.allowance(owner.address,signer[1].address)).to.be.eq(0);
+                    await token.connect(owner).approve(signer[1].address,1);
+                    await expect(token.connect(owner).decreaseAllowance(signer[1].address,16)).to.be.revertedWith("ERC20: decreased allowance below zero");   
+                })
+                it("Calling approve funtion for expired credits",async()=>{
+                    const seller = await new CarbonCreditParcel({
+                        _contract: exchange,
+                        _signer : owner
+                    })
+                    const parcel = await seller.createParcel(
+                        owner.address,
+                        1,
+                        15,
+                        expandTo6Decimals(10),
+                        1788309246,
+                        "Sample"
+                    );
+                    await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
+                    await usdt.connect(signer[1]).approve(exchange.address,expandTo6Decimals(102))
+                    await exchange.connect(signer[1]).buyNFT(parcel,10,true,usdt.address,1);
+                    
+                    await time.increaseTo(1788309346)
+
+                    await expect(token.connect(signer[1]).approve(signer[2].address,1)).to.be.revertedWith("Carbon credits are expired.");
+                })
+
+                it("Negative cases for transferfrom function",async()=>{
+                    await expect( token.connect(signer[1]).transferFrom(owner.address,1,signer[2].address,3)).of.be.revertedWith("Identity of receiver is not verified.");
+
+                    const seller = await new CarbonCreditParcel({
+                        _contract: exchange,
+                        _signer : owner
+                    })
+                    const parcel = await seller.createParcel(
+                        owner.address,
+                        1,
+                        15,
+                        expandTo6Decimals(10),
+                        1888309246,
+                        "Sample"
+                    );
+                    await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
+                    await usdt.connect(signer[1]).approve(exchange.address,expandTo6Decimals(102))
+                    await usdt.connect(owner).mint(signer[2].address, expandTo6Decimals(1000));
+                    await usdt.connect(signer[2]).approve(exchange.address,expandTo6Decimals(102));
+                    await usdt.connect(owner).mint(signer[3].address, expandTo6Decimals(1000));
+                    await usdt.connect(signer[3]).approve(exchange.address,expandTo6Decimals(102));
+                    await exchange.connect(signer[1]).buyNFT(parcel,10,true,usdt.address,1);
+                    await exchange.connect(signer[2]).buyNFT(parcel,4,true,usdt.address,1);
+                    await exchange.connect(signer[3]).buyNFT(parcel,1,true,usdt.address,1);
+                    await expect(token.connect(signer[1]).approve(signer[2].address,1));
+                    await token.connect(signer[3]).approve(signer[1].address,1)
+                    await expect(token.connect(signer[1]).transferFrom(signer[3].address,1,signer[1].address,3)).to.be.revertedWith("Not enough amount in the package.");
+                    await expect(token.connect(signer[1]).transferFrom(signer[2].address,1,signer[1].address,3)).to.be.revertedWith("Not allowed to take action on the carbon units");
+                    await time.increaseTo(1888309346);
+                    await expect(token.connect(signer[1]).transferFrom(signer[2].address,1,signer[1].address,3)).to.be.revertedWith("Carbon credits are expired.");
+                    
+                })
+
+                it("Insufficient balance, Zero address from and to testing for _transfer",async()=>{
+                    const seller = await new CarbonCreditParcel({
+                        _contract: exchange,
+                        _signer : owner
+                    })
+                    const parcel = await seller.createParcel(
+                        owner.address,
+                        1,
+                        15,
+                        expandTo6Decimals(10),
+                        1888409346,
+                        "Sample"
+                    );
+                    await usdt.connect(owner).approve(exchange.address,expandTo6Decimals(102))
+                    await exchange.connect(owner).buyNFT(parcel,10,true,usdt.address,1);
+                    await token.connect(owner).approve(signer[2].address,1)
+                    // await expect(token.connect(address0).transfer(signer[1].address,5)).to.be.revertedWith("ERC20: transfer from the zero address");
+                    await expect(token.connect(owner).transfer(address0,5)).to.be.revertedWith("ERC20: transfer to the zero address");
+                    await expect(token.connect(owner).transfer(signer[1].address,50)).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+
+                })
+
+                it("Approving from and to zero address",async()=>{
+                    const seller = await new CarbonCreditParcel({
+                        _contract: exchange,
+                        _signer : owner
+                    })
+                    const parcel = await seller.createParcel(
+                        owner.address,
+                        1,
+                        15,
+                        expandTo6Decimals(10),
+                        1888409346,
+                        "Sample"
+                    );
+                    await usdt.connect(owner).approve(exchange.address,expandTo6Decimals(102))
+                    await exchange.connect(owner).buyNFT(parcel,10,true,usdt.address,1);
+                    await expect(token.connect(owner).approve(address0,1)).to.be.revertedWith("ERC20: approve to the zero address");
+                    // await expect(token.connect(address0).approve(owner.address,1)).to.be.revertedWith("ERC20: approve from the zero address");
+                })
+
+
+            })
+        })
+
 })
