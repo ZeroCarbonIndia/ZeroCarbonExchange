@@ -75,8 +75,8 @@ contract CarbonExchange is Ownable, Initializable, EIP712Upgradeable, Reentrancy
     }
 
     function initialize(address _admin, uint96 _platformFeePercent, address _tether, address _carbonCreditNFT, address _identityFactory) external initializer {
-        require(_admin!=address(0),"Zero address.");
-        require(_tether!=address(0),"Zero address");
+        require(_admin!=address(0),"Zero address for Admin");
+        require(_tether!=address(0),"Zero address for tether");
         __EIP712_init_unchained("Zero_Carbon", "1");
         admin = _admin;
         platformFeePercent = _platformFeePercent;

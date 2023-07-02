@@ -40,6 +40,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
     let claimTopicsRegistry : ClaimTopicsRegistry;
 
     let address1 = "0x0000000000000000000000000000000000000001";
+    let address0 = "0x0000000000000000000000000000000000000000"
 
 
     beforeEach(async()=>{
@@ -55,6 +56,11 @@ describe("Zero Carbon Platform Test Cases",()=>{
         registryStorage = await new IdentityRegistryStorage__factory(owner).deploy();
         trustedIssuerRegistry = await new TrustedIssuersRegistry__factory(owner).deploy();
         claimTopicsRegistry = await new ClaimTopicsRegistry__factory(owner).deploy();
+        await expect(exchange.connect(owner).initialize(address0,200,usdt.address,nft.address,idFactory.address)).to.be.revertedWith("Zero address for Admin");
+        await expect(exchange.connect(owner).initialize(owner.address,200,address0,nft.address,idFactory.address)).to.be.revertedWith("Zero address for tether");
+        await expect(nft.connect(owner).initialize("Zero Carbon NFT","ZCC",address0,exchange.address,token.address)).to.be.revertedWith("ZAA");
+        await expect(nft.connect(owner).initialize("Zero Carbon NFT","ZCC",owner.address,address0,token.address)).to.be.revertedWith("ZAM");
+        await expect(nft.connect(owner).initialize("Zero Carbon NFT","ZCC",owner.address,exchange.address,address0)).to.be.revertedWith("ZAT");
         await exchange.connect(owner).initialize(owner.address,200,usdt.address,nft.address,idFactory.address);
         await nft.connect(owner).initialize("Zero Carbon NFT","ZCC",owner.address,exchange.address,token.address);
         await token.connect(owner).init("ZeroCarbon Token","ZCU",0,nft.address,registry.address,owner.address);
@@ -328,6 +334,44 @@ describe("Zero Carbon Platform Test Cases",()=>{
         expect(await exchange.platformFeePercent()).to.be.eq(400);
     })
 
+    it("Parcel owner test case", async()=>{
+        const seller = await new CarbonCreditParcel({
+            _contract: exchange,
+            _signer : owner
+        })
+        const parcel = await seller.createParcel(
+            owner.address,
+            1,
+            15,
+            expandTo6Decimals(20),
+            1222222,
+            "Sample"
+        );
+
+        expect(await exchange.parcelOwner(parcel)).to.be.eq(owner.address);
+    })
+
+    it("Buy carbon credits for the first time from eth with stake enabled", async()=>{
+        const seller = await new CarbonCreditParcel({
+            _contract: exchange,
+            _signer : owner
+        })
+        const parcel = await seller.createParcel(
+            owner.address,
+            1,
+            15,
+            100,
+            1222222,
+            "Sample"
+        );
+        await exchange.connect(owner).enableStake(true);
+        await exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:1020});
+        expect(await token.balanceOf(signer[1].address)).to.be.eq(10);
+        expect(await nft.maxSupplyPerCreditNFT(1)).to.be.eq(15);
+        expect( await nft.currentSupplyPerCreditNFT(1)).to.be.eq(10);
+        expect(await ethers.provider.getBalance(exchange.address)).to.be.eq(1020)
+    })
+
     describe("Negative test cases for exchange", async ()=>{
 
         it ("invalid signer test case", async()=>{
@@ -481,6 +525,126 @@ describe("Zero Carbon Platform Test Cases",()=>{
             await expect (exchange.connect(signer[2]).buyNFT(parcel2,3,false,signer[3].address,1)).to.be.revertedWith("Invalid currency");
         
     
+        })
+
+        it("Inavlid currency for withdrawing platform fee",async()=>{
+            const seller = await new CarbonCreditParcel({
+                _contract: exchange,
+                _signer : owner
+            })
+            const parcel = await seller.createParcel(
+                owner.address,
+                1,
+                15,
+                expandTo6Decimals(20),
+                1222222,
+                "Sample"
+            );
+            await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
+            await usdt.connect(signer[1]).approve(exchange.address,expandTo6Decimals(202))
+            await exchange.connect(signer[1]).buyNFT(parcel,2,true,usdt.address,1);
+            await expect(exchange.connect(owner).withdrawPlatformAmount(signer[2].address)).to.be.revertedWith("Currency not allowed!");
+            
+        })
+
+        it("Non-admin account calling only-admin functions",async()=>{
+            await expect(exchange.connect(signer[1]).setPlatformFeePercent(300)).to.be.revertedWith("You are not the admin.")
+        })
+
+    })
+
+    describe("Negative Test cases for Carbon credit NFT",async()=>{
+        it("Negative test cases for minting",async()=>{
+            await expect(nft.connect(owner).MintNft(signer[1].address,1,"Test_URI",20,3,1222222)).to.be.revertedWith("Call only allowed from Carbon Exchange");
+        })
+        it("Current supply greater than max supply",async()=>{
+            const seller = await new CarbonCreditParcel({
+                _contract: exchange,
+                _signer : owner
+            })
+            const parcel = await seller.createParcel(
+                owner.address,
+                1,
+                15,
+                expandTo6Decimals(20),
+                1222222,
+                "Sample"
+            );
+            await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
+            await usdt.connect(signer[1]).approve(exchange.address,expandTo6Decimals(202))
+            await usdt.connect(owner).mint(signer[2].address, expandTo6Decimals(1000));
+            await usdt.connect(signer[2]).approve(exchange.address,expandTo6Decimals(290))
+            await exchange.connect(signer[1]).buyNFT(parcel,2,true,usdt.address,1);
+            await expect(exchange.connect(signer[2]).buyNFT(parcel,14,true,usdt.address,1)).to.be.revertedWith("Total Supply for Carbon units cannot exceed max supply.");
+        })
+
+        it("Updating token URI for a token",async()=>{
+            const seller = await new CarbonCreditParcel({
+                _contract: exchange,
+                _signer : owner
+            })
+            const parcel = await seller.createParcel(
+                owner.address,
+                1,
+                15,
+                expandTo6Decimals(20),
+                1222222,
+                "Sample"
+            );
+            await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
+            await usdt.connect(signer[1]).approve(exchange.address,expandTo6Decimals(202))
+            await exchange.connect(signer[1]).buyNFT(parcel,2,true,usdt.address,1);
+
+            await nft.connect(owner).updateTokenURI(1,"Test_URI");
+            expect(await nft.tokenURI(1)).to.be.eq("Test_URI");
+        })
+
+        it("Updating token URI for a token with a non-admin account",async()=>{
+            const seller = await new CarbonCreditParcel({
+                _contract: exchange,
+                _signer : owner
+            })
+            const parcel = await seller.createParcel(
+                owner.address,
+                1,
+                15,
+                expandTo6Decimals(20),
+                1222222,
+                "Sample"
+            );
+            await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
+            await usdt.connect(signer[1]).approve(exchange.address,expandTo6Decimals(202))
+            await exchange.connect(signer[1]).buyNFT(parcel,2,true,usdt.address,1);
+
+            await expect(nft.connect(signer[1]).updateTokenURI(1,"Test_URI")).to.be.revertedWith("You are not the admin.");
+            
+        })
+
+        it("Getting total supply of a token",async()=>{
+            const seller = await new CarbonCreditParcel({
+                _contract: exchange,
+                _signer : owner
+            })
+            const parcel = await seller.createParcel(
+                owner.address,
+                1,
+                15,
+                expandTo6Decimals(20),
+                1222222,
+                "Sample"
+            );
+            await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
+            await usdt.connect(signer[1]).approve(exchange.address,expandTo6Decimals(202))
+            await exchange.connect(signer[1]).buyNFT(parcel,2,true,usdt.address,1);
+
+            expect(await nft._totalSupply()).to.be.eq(1);
+        })
+
+        it("Getting admin of the contract", async()=>{
+            expect(await nft.getAdmin()).to.be.eq(owner.address);
+        })
+        it("Checking support for interface",async()=>{
+            expect(await nft.supportsInterface("0x80ac58cd"));
         })
 
     })
