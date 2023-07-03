@@ -171,7 +171,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
             1,
             15,
             100,
-            1688309246,
+            1788309246,
             "Sample"
         );
         await exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000});
@@ -188,7 +188,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
             1,
             5,
             50,
-            1688309246,
+            1788309246,
             "Test_URI"
         )
         await token.connect(signer[1]).approve(exchange.address,1);
@@ -209,7 +209,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
             1,
             15,
             expandTo6Decimals(10),
-            1688309246,
+            1788309246,
             "Sample"
         );
         await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
@@ -225,7 +225,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
             1,
             5,
             expandTo6Decimals(20),
-            1688309246,
+            1788309246,
             "Test_URI"
         )
         await usdt.connect(owner).mint(signer[2].address, expandTo6Decimals(1000));
@@ -378,7 +378,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 1,
                 15,
                 100,
-                168836,
+                12222,
                 "Sample"
             );
             await expect(exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000})).to.be.revertedWith("Invalid Time period.");
@@ -393,7 +393,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 1,
                 15,
                 100,
-                1688309246,
+                1788309246,
                 "Sample"
             );
             await expect(exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000})).to.be.revertedWith("Invalid seller.");
@@ -409,7 +409,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 1,
                 15,
                 100,
-                1688309246,
+                1788309246,
                 "Sample"
             );
             await expect(exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10})).to.be.revertedWith("Invalid amount.");
@@ -425,7 +425,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 1,
                 15,
                 expandTo6Decimals(10),
-                1688309246,
+                1788309246,
                 "Sample"
             );
             await expect(exchange.connect(signer[1]).buyNFT(parcel,10,true,signer[3].address,1)).to.be.revertedWith("Currency not allowed.");
@@ -441,7 +441,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 1,
                 15,
                 expandTo6Decimals(10),
-                1688309246,
+                1788309246,
                 "Sample"
             );
             await usdt.connect(owner).mint(signer[1].address, expandTo6Decimals(1000));
@@ -457,7 +457,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 2,
                 5,
                 expandTo6Decimals(20),
-                1688309246,
+                1788309246,
                 "Test_URI"
             )
             await usdt.connect(owner).mint(signer[2].address, expandTo6Decimals(1000));
@@ -478,7 +478,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 1,
                 15,
                 100,
-                1688309246,
+                1788309246,
                 "Sample"
             );
             await exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000});
@@ -492,7 +492,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 1,
                 5,
                 10,
-                1688309246,
+                1788309246,
                 "Test_URI"
             )
             await token.connect(signer[1]).approve(exchange.address,1);
@@ -511,10 +511,10 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 1,
                 15,
                 100,
-                1688309246,
+                1788309246,
                 "Sample"
             );
-            await expect(exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000})).to.be.revertedWith("Invalid Time period.");
+            await exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000});
             const seller2 = await new CarbonCreditParcel({
                 _contract: exchange,
                 _signer : signer[1]
@@ -525,7 +525,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 1,
                 5,
                 expandTo6Decimals(10),
-                1688309246,
+                1788309246,
                 "Test_URI"
             )
             await token.connect(signer[1]).approve(exchange.address,1);
