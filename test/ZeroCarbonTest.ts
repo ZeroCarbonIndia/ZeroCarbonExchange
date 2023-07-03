@@ -119,11 +119,6 @@ describe("Zero Carbon Platform Test Cases",()=>{
         expect(await exchange.admin()).to.be.eq(signer[1].address);
     })
 
-    it("Enable seller stake.", async()=>{
-        expect(await exchange.stakeEnabled()).to.be.eq(false);
-        await exchange.connect(owner).enableStake(true);
-        expect(await exchange.stakeEnabled()).to.be.eq(true);
-    })
 
     it("Buy carbon credits for the first time from eth", async()=>{
         const seller = await new CarbonCreditParcel({
@@ -352,7 +347,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
         expect(await exchange.parcelOwner(parcel)).to.be.eq(owner.address);
     })
 
-    it("Buy carbon credits for the first time from eth with stake enabled", async()=>{
+    it("Buy carbon credits for the first time from eth", async()=>{
         const seller = await new CarbonCreditParcel({
             _contract: exchange,
             _signer : owner
@@ -365,12 +360,11 @@ describe("Zero Carbon Platform Test Cases",()=>{
             1788309246,
             "Sample"
         );
-        await exchange.connect(owner).enableStake(true);
         await exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:1020});
         expect(await token.balanceOf(signer[1].address)).to.be.eq(10);
         expect(await nft.maxSupplyPerCreditNFT(1)).to.be.eq(15);
         expect( await nft.currentSupplyPerCreditNFT(1)).to.be.eq(10);
-        expect(await ethers.provider.getBalance(exchange.address)).to.be.eq(1020)
+        expect(await ethers.provider.getBalance(exchange.address)).to.be.eq(20)
     })
 
     describe("Negative test cases for exchange", async ()=>{
@@ -520,7 +514,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 1688309246,
                 "Sample"
             );
-            await exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000});
+            await expect(exchange.connect(signer[1]).buyNFT(parcel,10,true,address1,1,{value:10000})).to.be.revertedWith("Invalid Time period.");
             const seller2 = await new CarbonCreditParcel({
                 _contract: exchange,
                 _signer : signer[1]

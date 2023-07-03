@@ -30,8 +30,6 @@ contract CarbonExchange is
 
     address identityFactory;
 
-    bool public stakeEnabled;
-
     struct CarbonUnitsLeftInNFT {
         uint256 totalCarbonUnits;
         uint256 CarbonUnitsLeft;
@@ -208,7 +206,7 @@ contract CarbonExchange is
                         _noCarbonUnits) /
                     10000;
 
-                require(sentToSeller, "Ether transfer failed.");
+                require(sentToSeller, "Ether transfer failed to seller.");
 
                 if (msg.value > amount) {
                     (bool sent, ) = payable(msg.sender).call{
@@ -272,10 +270,6 @@ contract CarbonExchange is
         return (totalAmount);
     }
 
-    function enableStake(bool _if) external onlyAdmin {
-        stakeEnabled = _if;
-    }
-
     function saleTransaction(
         address _seller,
         uint _tokenId,
@@ -285,15 +279,11 @@ contract CarbonExchange is
         address _currencyAddress
     ) internal {
         SaleReceipt storage saleReceipt = SaleReceiptForBuyer[msg.sender];
-        if (stakeEnabled) {
-            SellerAmounts[_seller][_tokenId].currencyAddress = _currencyAddress;
-            SellerAmounts[_seller][_tokenId].amount += _sellerAmount;
-        } else {
             if (_currencyAddress == address(1)) {
-                (bool sentAmount, ) = payable(_seller).call{
+                (bool sentToSeller, ) = payable(_seller).call{
                     value: _sellerAmount
                 }("");
-                require(sentAmount, "Amount failed to transfer to seller.");
+                require(sentToSeller, "Ether transfer failed to seller.");
             } else {
                 IERC20(_currencyAddress).transferFrom(
                     msg.sender,
@@ -306,7 +296,6 @@ contract CarbonExchange is
                     _totalAmount - _sellerAmount
                 );
             }
-        }
         saleReceipt.totalTransactions++;
         PerSale storage perSale = saleReceipt.receiptPerTransaction[
             saleReceipt.totalTransactions
