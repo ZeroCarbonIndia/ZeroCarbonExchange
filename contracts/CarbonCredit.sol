@@ -97,6 +97,18 @@ contract ZeroCarbonCredit is
         _setTokenURI(tokenId, _tokenURI);
     }
 
+    function updateAdmin(address _admin) external onlyAdmin{
+        admin = _admin;
+    }
+
+    function updateExchange(address _exchange) external onlyAdmin {
+        exchange = _exchange;
+    }
+
+    function updateCarbonUnit(address _carbonUnit) external onlyAdmin {
+        carbonUnitsToken = _carbonUnit; 
+    }
+
     function _totalSupply() external view virtual returns (uint256) {
         return totalSupply;
     }

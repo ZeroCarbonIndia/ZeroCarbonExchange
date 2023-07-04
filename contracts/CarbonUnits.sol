@@ -18,7 +18,6 @@ contract ZeroCarbonUnitToken is Context, Initializable {
         private _allowancePerTx;
 
     uint256 private _totalSupply;
-    uint256 private _maxSupply;
 
     string private _name;
     string private _symbol;
@@ -103,10 +102,6 @@ contract ZeroCarbonUnitToken is Context, Initializable {
         return _totalSupply;
     }
 
-    function maxSupply() public view virtual returns (uint256) {
-        return _maxSupply;
-    }
-
     function balanceOf(address account) public view virtual returns (uint256) {
         return _balances[account];
     }
@@ -127,9 +122,13 @@ contract ZeroCarbonUnitToken is Context, Initializable {
         return _allowances[owner][spender];
     }
 
-    // function approveForTxId() public returns(bool) {
-
-    // }
+    function allowancePerTx(
+        address owner,
+        address spender,
+        uint256 txId
+    ) public view virtual returns (bool) {
+        return _allowancePerTx[owner][spender][txId];
+    }
 
     function approve(
         address spender,

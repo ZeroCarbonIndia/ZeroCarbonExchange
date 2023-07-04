@@ -26,6 +26,7 @@ contract IdentityFactory is Initializable{
     function init(address _identityTemplate, address _identityRegistry, address _admin) external initializer {
         identityTemplate = _identityTemplate;
         identityRegistry = _identityRegistry;
+        admin = _admin;
     }
 
     function createAndRegisterIdentity(address _address, uint16 _countryCode) external returns(address){
@@ -43,7 +44,16 @@ contract IdentityFactory is Initializable{
         IIdentityRegistry(identityRegistry).deleteIdentity(_userAddress);
     }
 
+    function updateAdmin(address _admin) external onlyAdmin{
+        admin = _admin;
+    }
 
+    function updateTemplate(address _template) external onlyAdmin {
+        identityTemplate = _template;
+    }
 
+    function updateRegistry(address _registry) external onlyAdmin {
+        identityRegistry = _registry;
+    }
 
 }

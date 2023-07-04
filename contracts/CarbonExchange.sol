@@ -241,12 +241,16 @@ contract CarbonExchange is
         }
     }
 
-    function setPlatformFeePercent(uint96 _newPlatformFee) external onlyAdmin {
+    function updatePlatformFeePercent(uint96 _newPlatformFee) external onlyAdmin {
         platformFeePercent = _newPlatformFee;
     }
 
-    function setAdmin(address _newAdmin) external onlyAdmin {
+    function updateAdmin(address _newAdmin) external onlyAdmin {
         admin = _newAdmin;
+    }
+
+    function updateCarbonCredit(address _cc) external onlyAdmin {
+        carbonCreditNFT = _cc;
     }
 
     function registerIdentity(uint16 _countryCode) internal returns (address) {
