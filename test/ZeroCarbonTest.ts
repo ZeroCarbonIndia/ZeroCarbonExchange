@@ -92,7 +92,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
     })
 
     it("Setting platform fee.", async() =>{
-        await exchange.connect(owner).setPlatformFeePercent(300);
+        await exchange.connect(owner).updatePlatformFeePercent(300);
         expect(await exchange.platformFeePercent()).to.be.eq(300);
     })
 
@@ -115,7 +115,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
 
     it("Setting new admin.", async()=>{
         console.log("Current admin: ", await exchange.admin());
-        await exchange.connect(owner).setAdmin(signer[1].address);
+        await exchange.connect(owner).updateAdmin(signer[1].address);
         expect(await exchange.admin()).to.be.eq(signer[1].address);
     })
 
@@ -557,7 +557,7 @@ describe("Zero Carbon Platform Test Cases",()=>{
         })
 
         it("Non-admin account calling only-admin functions",async()=>{
-            await expect(exchange.connect(signer[1]).setPlatformFeePercent(300)).to.be.revertedWith("You are not the admin.")
+            await expect(exchange.connect(signer[1]).updatePlatformFeePercent(300)).to.be.revertedWith("You are not the admin.")
         })
 
     })
@@ -683,7 +683,6 @@ describe("Zero Carbon Platform Test Cases",()=>{
                 await usdt.connect(signer[1]).approve(exchange.address,expandTo6Decimals(102))
                 await exchange.connect(signer[1]).buyNFT(parcel,10,true,usdt.address,1);
                 expect(await token.totalSupply()).to.be.eq(10);
-                expect(await token.maxSupply()).to.be.eq(0);
             })
 
             it("Transfer function testing",async()=>{

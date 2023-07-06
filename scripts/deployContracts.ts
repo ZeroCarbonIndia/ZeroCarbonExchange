@@ -11,7 +11,7 @@ function sleep(ms: any) {
   }
 
 async function main() {
-    const proxy = await ethers.getContractFactory("OwnedUpgradeabilityProxy");
+    // const proxy = await ethers.getContractFactory("OwnedUpgradeabilityProxy");
     const exchange = await ethers.getContractFactory("CarbonExchange");
     const nft = await ethers.getContractFactory("ZeroCarbonCredit");
     const token = await ethers.getContractFactory("ZeroCarbonUnitToken");
@@ -23,20 +23,20 @@ async function main() {
     await sleep(2000);
     const Token = await token.deploy();
     await sleep(2000);
-    const Proxy_Exchange = await proxy.deploy();
-    await sleep(2000);
-    const Proxy_NFT = await proxy.deploy();
-    await sleep(2000);
-    const Proxy_Token = await proxy.deploy();
-    await sleep(2000);
+    // const Proxy_Exchange = await proxy.deploy();
+    // await sleep(2000);
+    // const Proxy_NFT = await proxy.deploy();
+    // await sleep(2000);
+    // const Proxy_Token = await proxy.deploy();
+    // await sleep(2000);
 
 
     console.log("Exchange Address- "+Exchange.address);
     console.log("NFT Address- "+NFT.address);
     console.log("Token Address- "+Token.address);
-    console.log("Exchange Proxy- "+Proxy_Exchange.address);
-    console.log("NFT Proxy- "+Proxy_NFT.address);
-    console.log("Token Proxy- "+Proxy_Token.address);
+    // console.log("Exchange Proxy- "+Proxy_Exchange.address);
+    // console.log("NFT Proxy- "+Proxy_NFT.address);
+    // console.log("Token Proxy- "+Proxy_Token.address);
 
 
 }  
@@ -55,3 +55,7 @@ main()
 // Exchange Proxy- 0x419a129851F7B3659DCd7667F3AE931f0261AD4F
 // NFT Proxy- 0x3832F99f45979cEDF67603CB4235253E4664C3C3
 // Token Proxy- 0x6b27069b128b5Cb3961721767c1B0dC661B776F7
+
+// Exchange Address- 0xAaB08C2Ac1F52D3BAbAA3463F4646E2E94093477
+// NFT Address- 0x531D30F4A3E22D804ae4842C6d1EF1430b49e208
+// Token Address- 0xF7534AA630f7C49568EF3cbF174d204Df0f68173
